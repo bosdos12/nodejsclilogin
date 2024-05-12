@@ -1,0 +1,71 @@
+nodejsclilogin is a serverside nodejs library for logging into command line applications through already-logged in web-based clients. 
+The library also has a mongodb integration (only) for maintaining the login data.
+The whole point is everything to be modular so plugins and integrations for different systems can be built on top of an open framework.
+
+
+pycliloginclient is a python based clientside module for integrating clilogin into python CLI applications.
+
+
+2 login options:
+	Confirm Login - The user gets sent to the browser where they are logged in to the application, then they just press login.
+	Code-Based login - The user gets a time-based otp that will expire inside of their cli tool, they get sent to the browser,
+			   they just enter their login code, and the system then logs them into the account that they used to login.
+
+
+Confirm Login workflow:	
+	CLi tool requests a login code from the server.
+	The tool then redirects the user to the browser with the logincode as part of the request queries.
+	The user then presses the "Confirm Login" button, then a request is sent to the "confirmclilogin" endpoint on the server.
+	The server receives the login code, obviously it runs its own user authentication and authorization, 
+	since, the CLI will get the exact same credentials as the web based client for authorization and usage of the application.
+	After running the authentication and authorization, the server calls the "confirmLogin" function of the nodejsclilogin library with the logincode and usercredentials.
+	
+	The CLI tool has been polling a defined api endpoint all this time to get status updates on the login request,
+	once the confirmlogin function has executed, the response becomes successfull and sends back the usercredentials.
+	The usercredentials are then returned and the loop exits.
+	if the logincode expires, the logincode expiration message is logged and the polling loop exits.
+
+	
+server functions & resources:
+	CliLoginInstance;
+	generateclilogincode();
+	confirmclilogin(logincode, usercredentials);
+	rejectclilogin(logincode, message);
+	deleteclilogin(logincode);
+	checkcliloginstatus(logincode);
+	
+	
+CliLoginInstance:
+	Mongoose model for storing the cli login data to be accessed by other functions of the library in a structured manner;
+	stored data:
+		loginCode: "";
+		loginType: "confirm" | "codebased";
+		status: "confirmed" | "rejected";
+		usercredentials: "" // The value that will be returned to the client. Can be formatted however they want, but string;
+		expiration: Number; (in seconds)
+		creationDate: date string;
+	
+		
+generateclilogincode():
+	Generates a login code, creates the CliLoginInstance on the database;
+	returns: clilogincode	
+	
+	
+confirmclilogin(logincode, usercredentials):
+	sets the status of the CliLoginInstance with the given logincode as "confirmed",
+	sets the usercredentials as the usercredentials;
+	
+
+rejectclilogin(logincode):
+	sets the status of the CliLoginInstance with the given logincode as "rejected"
+		
+	
+deleteclilogin(logincode):
+	deletes the CliLoginInstance with the given logincode from the databse
+	
+
+checkcliloginstatus(logincode):
+	returns the status of the CliLoginInstance with the given logincode;
+	
+	
+	
